@@ -570,8 +570,9 @@ async def generate_quiz_from_document(
         
         # Add metadata
         quiz_data["generated_from_document"] = True
+        subtopics = quiz_data.get("subtopics", quiz_data.get("topics", []))
         quiz_data["total_questions"] = sum(
-            len(topic["questions"]) for topic in quiz_data["topics"]
+            len(sub["questions"]) for sub in subtopics
         )
         
         return {
@@ -640,8 +641,9 @@ async def generate_quiz_from_document_simple(
         quiz_data["generated_from_document"] = True
         quiz_data["source_filename"] = file.filename
         quiz_data["document_metadata"] = processed_data["metadata"]
+        subtopics = quiz_data.get("subtopics", quiz_data.get("topics", []))
         quiz_data["total_questions"] = sum(
-            len(topic["questions"]) for topic in quiz_data["topics"]
+            len(sub["questions"]) for sub in subtopics
         )
         
         return {
