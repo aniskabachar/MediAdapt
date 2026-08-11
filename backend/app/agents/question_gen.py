@@ -120,7 +120,8 @@ Respond ONLY with valid JSON (no markdown, no backticks):
             api_key=api_key,
             http_client=httpx.Client(verify=False)
         )
-        response = client.chat.completions.create(
+        response = safe_groq_completion(
+            client,
             model="llama-3.3-70b-versatile",
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}],

@@ -15,7 +15,7 @@ function getMermaid() {
   if (!mermaidInitPromise) {
     mermaidInitPromise = import("mermaid").then((mod) => {
       const mermaid = mod.default;
-      mermaid.initialize({ startOnLoad: false, theme: "neutral", securityLevel: "strict" });
+      mermaid.initialize({ startOnLoad: false, theme: "neutral", securityLevel: "strict", suppressErrorRendering: true });
       return mermaid;
     });
   }

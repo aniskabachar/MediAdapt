@@ -61,7 +61,8 @@ Rules:
         for attempt in range(3):
             try:
                 logger.info(f"Attempt {attempt + 1}: Making API call to Groq...")
-                message = client.chat.completions.create(
+                message = safe_groq_completion(
+                    client,
                     model="llama-3.3-70b-versatile",
                     max_tokens=1500,
                     messages=[{"role": "user", "content": prompt}],

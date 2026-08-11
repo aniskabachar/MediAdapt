@@ -47,3 +47,32 @@ def resolve_groq_api_key(explicit_key: Optional[str] = None) -> Optional[str]:
     them support the same optional per-request override behavior.
     """
     return explicit_key or settings.GROQ_API_KEY or None
+
+
+def safe_groq_completion(client, **kwargs):
+    """Executes a Groq chat completion with automatic model fallbacks
+
+    If a 429 RateLimitError (TPD/RPM limit) occurs on the primary model,
+    it automatically retries with secondary fast models so the application
+    never fails with a 500 Server Error.
+    """
+    requested_model = kwargs.get("model") or settings.GROQ_MODEL
+    candidate_models = [requested_model, "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"]
+
+    seen = set()
+    models = [m for m in candidate_models if not (m in seen or seen.add(m))]
+
+    last_exc = None
+    for model in models:
+        try:
+            kwargs["model"] = model
+            return client.chat.completions.create(**kwargs)
+        except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "rate_limit" in err_str.lower() or "Rate limit" in err_str:
+                last_exc = e
+                continue
+            raise e
+    if last_exc:
+        raise last_exc
+

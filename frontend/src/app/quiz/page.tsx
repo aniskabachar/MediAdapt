@@ -34,6 +34,58 @@ interface QuestionRecord {
  bloomLevel: string;
 }
 
+function getSubtopicProgression(topic: string, dagData?: any): string[] {
+  if (dagData?.subtopics && dagData.subtopics.length > 0) {
+    return dagData.subtopics.map((st: any) => st.title || st.label || String(st));
+  }
+  const norm = (topic || "").toLowerCase();
+
+  if (norm.includes("object") || norm.includes("oop") || norm.includes("java") || norm.includes("cpp")) {
+    return [
+      "Classes and Objects",
+      "Encapsulation & Access Modifiers",
+      "Inheritance & Method Overriding",
+      "Polymorphism & Interfaces",
+      "Abstraction & Design Patterns"
+    ];
+  }
+  if (norm.includes("dsa") || norm.includes("data structure") || norm.includes("algorithm") || norm.includes("tree")) {
+    return [
+      "Arrays & Basic String Operations",
+      "Linked Lists & Recursion",
+      "Stacks, Queues & Hashing",
+      "Binary Trees & Graph Traversal",
+      "Dynamic Programming & Heaps"
+    ];
+  }
+  if (norm.includes("sql") || norm.includes("database")) {
+    return [
+      "Basic SELECT & WHERE Filtering",
+      "JOIN Operations (INNER, LEFT, RIGHT)",
+      "GROUP BY & Aggregations",
+      "Subqueries & Complex Joins",
+      "Window Functions & Schema Design"
+    ];
+  }
+  if (norm.includes("python")) {
+    return [
+      "Variables & Syntax Basics",
+      "Control Flow & Loops",
+      "Functions & Scope",
+      "Lists, Dicts & Comprehensions",
+      "OOP & Modules in Python"
+    ];
+  }
+
+  return [
+    `${topic} Fundamentals`,
+    `${topic} Basic Principles`,
+    `${topic} Intermediate Applications`,
+    `${topic} Advanced Systems`,
+    `${topic} Expert Integration`
+  ];
+}
+
 function QuizContent() {
  const { user, isLoading } = useAuth();
  const router = useRouter();
@@ -98,6 +150,7 @@ function QuizContent() {
  const [proctoringExceeded, setProctoringExceeded] = useState(false);
  const [lastProctoringEvent, setLastProctoringEvent] = useState("");
  const [cameraMinimized, setCameraMinimized] = useState(false);
+  const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
  const [proctoringSessionToken, setProctoringSessionToken] = useState<string | null>(null);
  const [quickNotification, setQuickNotification] = useState<string | null>(null);
  
@@ -157,43 +210,57 @@ function QuizContent() {
  loadClassQuiz();
  }, [classroomQuizId, user]);
 
- const fetchNextQuestion = async (currentTheta: number) => {
- setIsGenLoading(true);
- try {
- const data = await generateQuestion({
- topic: inputTopic,
- subtopic: selectedSubtopic || "General",
- difficulty: currentTheta,
- bloom_level: bloomLevel,
- previous_questions: askedQuestions,
- classroom_quiz_id: classQuiz?.id,
- });
- setQ({
- question: data.question,
- options: [data.options.A, data.options.B, data.options.C, data.options.D],
- optKeys: ["A", "B", "C", "D"],
- correct: ["A", "B", "C", "D"].indexOf(data.correct_answer),
- topic: inputTopic,
- topicColor: "var(--primary)",
- difficulty: currentTheta,
- diffLabel: "Adaptive",
- concept: data.concept || selectedSubtopic || 'General',
- hint: data.hint,
- explanation: data.explanation,
- misconceptions: data.misconceptions,
- });
- setAskedQuestions((prev) => [...prev, data.question]);
- setDifficulty(currentTheta);
- } catch (e) {
- console.error(e);
- setMessage("Failed to generate question. Please try again.");
- } finally {
- setIsGenLoading(false);
- setTimer(60);
- }
- };
+ const fetchNextQuestion = async (currentTheta?: number, currentBloom?: string, currentSubtopic?: string) => {
+    setIsGenLoading(true);
+    const thetaToUse = currentTheta !== undefined ? currentTheta : theta;
+    const bloomToUse = currentBloom || bloomLevel || "understand";
+    const subtopicToUse = currentSubtopic || selectedSubtopic || "General";
 
- const handleGenerateDag = async () => {
+    try {
+      const data = await generateQuestion({
+        topic: inputTopic,
+        subtopic: subtopicToUse,
+        difficulty: thetaToUse,
+        bloom_level: bloomToUse,
+        previous_questions: askedQuestions,
+        classroom_quiz_id: classQuiz?.id,
+      });
+
+      let rawAns = String(data.correct_answer || "A").trim().toUpperCase();
+      let correctKey = "A";
+      if (rawAns.startsWith("A")) correctKey = "A";
+      else if (rawAns.startsWith("B")) correctKey = "B";
+      else if (rawAns.startsWith("C")) correctKey = "C";
+      else if (rawAns.startsWith("D")) correctKey = "D";
+      let correctIdx = ["A", "B", "C", "D"].indexOf(correctKey);
+      if (correctIdx === -1) correctIdx = 0;
+
+      setQ({
+        question: data.question,
+        options: [data.options.A, data.options.B, data.options.C, data.options.D],
+        optKeys: ["A", "B", "C", "D"],
+        correct: correctIdx,
+        topic: inputTopic,
+        topicColor: "var(--primary)",
+        difficulty: thetaToUse,
+        diffLabel: "Adaptive",
+        concept: data.concept || subtopicToUse,
+        hint: data.hint,
+        explanation: data.explanation,
+        misconceptions: data.misconceptions,
+      });
+      setAskedQuestions((prev) => [...prev, data.question]);
+      setDifficulty(thetaToUse);
+    } catch (e) {
+      console.error(e);
+      setMessage("Failed to generate question. Please try again.");
+    } finally {
+      setIsGenLoading(false);
+      setTimer(60);
+    }
+  };
+
+  const handleGenerateDag = async () => {
  if (!inputTopic.trim()) return;
  setIsLoadingDag(true);
  try {
@@ -932,69 +999,105 @@ function QuizContent() {
  };
 
  const finalizeAnswer = async (opts?: { timedOut?: boolean }) => {
- const timedOut = !!opts?.timedOut;
- if (!q || submitted) return;
- if (!timedOut && selected === null) return;
+    const timedOut = !!opts?.timedOut;
+    if (!q || submitted) return;
+    if (!timedOut && selected === null) return;
 
- setIsSubmitting(true);
- setOldTheta(theta);
- try {
- const data = await submitAnswer({
- user_id: user?.id,
- classroom_id: classQuiz?.classroom_id,
- classroom_quiz_id: classQuiz?.id,
- theta,
- difficulty,
- selected_option: selected !== null ? q.optKeys[selected] : "",
- correct_answer: q.optKeys[q.correct],
- topic: q.topic,
- subtopic: selectedSubtopic || "General",
- question: q.question,
- question_index: qIndex + 1,
- misconception: q.misconceptions?.[selected !== null ? selected : q.correct],
- misconceptions: q.misconceptions,
- answer_options: q.options ? {
- A: q.options[0],
- B: q.options[1],
- C: q.options[2],
- D: q.options[3]
- } : undefined,
- explanation: q.explanation,
- bloom_level: bloomLevel,
- });
+    setIsSubmitting(true);
+    setOldTheta(theta);
+    try {
+      const data = await submitAnswer({
+        user_id: user?.id,
+        classroom_id: classQuiz?.classroom_id,
+        classroom_quiz_id: classQuiz?.id,
+        theta,
+        difficulty,
+        selected_option: selected !== null ? q.optKeys[selected] : "",
+        correct_answer: q.optKeys[q.correct],
+        topic: q.topic,
+        subtopic: selectedSubtopic || "General",
+        question: q.question,
+        question_index: qIndex + 1,
+        misconception: q.misconceptions?.[selected !== null ? selected : q.correct],
+        misconceptions: q.misconceptions,
+        answer_options: q.options ? {
+          A: q.options[0],
+          B: q.options[1],
+          C: q.options[2],
+          D: q.options[3]
+        } : undefined,
+        explanation: q.explanation,
+        bloom_level: bloomLevel,
+      });
 
- // Calculate XP
- const gained = data.correct ? 12 : 3;
- setXpGained(gained);
- setXp((prev) => prev + gained);
+      // Calculate XP
+      const gained = data.correct ? 12 : 3;
+      setXpGained(gained);
+      setXp((prev) => prev + gained);
 
- setFeedback(data);
- setQuestionHistory((prev) => [
- ...prev,
- {
- question: q.question,
- subtopic: selectedSubtopic || "General",
- concept: q.concept || "General",
- correct: data.correct,
- bloomLevel: bloomLevel
- }
- ]);
- 
- setMisconceptionTags((prev) => [...prev, ...(data.misconception_tag ? [data.misconception_tag] : [])]);
- setScore((s) => s + (data.correct ? 1 : 0));
- setSubmitted(true);
- 
- const newThetaVal = data.new_theta !== undefined ? data.new_theta : (data.next_theta !== undefined ? data.next_theta : theta);
- setTheta(newThetaVal);
- } catch (e) {
- console.error("Failed to submit answer:", e);
- setMessage("Failed to submit answer. Please try again.");
- } finally {
- setIsSubmitting(false);
- }
- };
+      setFeedback(data);
+      setQuestionHistory((prev) => [
+        ...prev,
+        {
+          question: q.question,
+          subtopic: selectedSubtopic || "General",
+          concept: q.concept || "General",
+          correct: data.correct,
+          bloomLevel: bloomLevel
+        }
+      ]);
+      
+      setMisconceptionTags((prev) => [...prev, ...(data.misconception_tag ? [data.misconception_tag] : [])]);
+      setScore((s) => s + (data.correct ? 1 : 0));
+      setSubmitted(true);
+      
+      const rawThetaVal = data.new_theta !== undefined ? data.new_theta : (data.next_theta !== undefined ? data.next_theta : theta);
+      
+      const progression = getSubtopicProgression(inputTopic, dagData);
+      const currentSubtopicIndex = progression.findIndex(s => s.toLowerCase() === selectedSubtopic.toLowerCase());
+      const safeIndex = currentSubtopicIndex !== -1 ? currentSubtopicIndex : 0;
 
- finalizeAnswerRef.current = finalizeAnswer;
+      let nextSubtopicVal = selectedSubtopic || progression[0];
+      let nextBloomVal = data.next_bloom || bloomLevel;
+      let nextThetaVal = rawThetaVal;
+
+      if (!data.correct) {
+        // ─── WRONG ANSWER: IMMEDIATELY DROP TO EASIER LEVEL & BASICS ───
+        setConsecutiveCorrect(0);
+        // Force theta down to negative territory if it wasn't already low
+        nextThetaVal = Math.min(-0.5, rawThetaVal);
+
+        // Drop Bloom level to 'remember' or 'understand'
+        nextBloomVal = "remember";
+
+        // Regress subtopic 1 step towards basic level
+        const prevIdx = Math.max(0, safeIndex - 1);
+        nextSubtopicVal = progression[prevIdx];
+      } else {
+        // ─── CORRECT ANSWER: TEST KNOWLEDGE, THEN ESCALATE ───
+        const newConsecutive = consecutiveCorrect + 1;
+        setConsecutiveCorrect(newConsecutive);
+
+        // After 2 consecutive correct (or big theta gain), escalate to next harder subtopic!
+        if (newConsecutive >= 2 || rawThetaVal > theta + 0.25) {
+          const nextIdx = Math.min(progression.length - 1, safeIndex + 1);
+          nextSubtopicVal = progression[nextIdx];
+          setConsecutiveCorrect(0);
+        }
+      }
+
+      setTheta(nextThetaVal);
+      setBloomLevel(nextBloomVal);
+      setSelectedSubtopic(nextSubtopicVal);
+    } catch (e) {
+      console.error("Failed to submit answer:", e);
+      setMessage("Failed to submit answer. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  finalizeAnswerRef.current = finalizeAnswer;
 
  const handleNext = () => {
  if (proctoringExceeded) {
@@ -1025,7 +1128,7 @@ function QuizContent() {
  finishQuiz();
  } else {
  setQIndex(nextIndex);
- fetchNextQuestion(theta);
+ fetchNextQuestion(theta, bloomLevel, selectedSubtopic);
  }
  };
 
@@ -1469,8 +1572,21 @@ function QuizContent() {
  </div>
  
  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
- {/* Ability & Mastery Badge metrics */}
- <div style={{ display: "flex", gap: "var(--space-2)" }}>
+ {/* Ability, Mastery, Bloom, and Subtopic Badge metrics */}
+            <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", padding: "var(--space-1) var(--space-3)", background: "var(--success-soft)", border: "1px solid var(--success-light)", borderRadius: "var(--radius-full)" }} title="Current Bloom's Taxonomy Level">
+                <BookOpen size={14} color="var(--success)" />
+                <span style={{ fontSize: "var(--text-xs)", fontWeight: "var(--font-extrabold)", color: "var(--success-strong)", textTransform: "capitalize" }}>
+                  Bloom: {bloomLevel}
+                </span>
+              </div>
+              {selectedSubtopic && (
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", padding: "var(--space-1) var(--space-3)", background: "var(--surface-low)", border: "1px solid var(--outline)", borderRadius: "var(--radius-full)" }} title="Active DAG Focus Subtopic">
+                  <span style={{ fontSize: "var(--text-xs)", fontWeight: "var(--font-extrabold)", color: "var(--primary)" }}>
+                    Subtopic: {selectedSubtopic}
+                  </span>
+                </div>
+              )}
  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", padding: "var(--space-1) var(--space-3)", background: "var(--primary-soft)", border: "1px solid var(--primary-light)", borderRadius: "var(--radius-full)" }} title="Your current calculated Ability (Theta)">
  <Brain size={14} color="var(--primary)" />
  <span style={{ fontSize: "var(--text-xs)", fontWeight: "var(--font-extrabold)", color: "var(--primary-strong)" }}>

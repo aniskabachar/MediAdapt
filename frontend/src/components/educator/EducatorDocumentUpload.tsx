@@ -380,7 +380,6 @@ export function EducatorDocumentUpload({ onQuizGenerated, onCancel, classroomId 
                 cursor: isUploading ? 'not-allowed' : 'pointer',
                 opacity: isUploading ? 0.5 : 1
               }}
-              disabled={isUploading}
             >
               Cancel
             </button>
@@ -403,7 +402,6 @@ export function EducatorDocumentUpload({ onQuizGenerated, onCancel, classroomId 
               justifyContent: 'center',
               gap: 'var(--space-2)'
             }}
-            disabled={!file || (isUploading && !success) || (!success && !file)}
           >
             {isUploading ? (
               <>

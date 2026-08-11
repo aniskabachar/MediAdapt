@@ -6,7 +6,7 @@ import json
 import httpx
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
-from app.core.config import resolve_groq_api_key
+from app.core.config import resolve_groq_api_key, safe_groq_completion
 from app.database.session import get_db
 from app.irt.theta_estimator import ThetaEstimator
 from app.models.user import User
@@ -61,16 +61,22 @@ async def generate_question(req: QuestionRequest, db: Session = Depends(get_db))
         http_client=httpx.Client(verify=False)
     )
     difficulty_label = ThetaEstimator.theta_to_label(req.difficulty)
-    avoid = "\n".join(f"- {q}" for q in req.previous_questions[-5:]) if req.previous_questions else "None"
+    avoid = "\n".join(f"- {q}" for q in req.previous_questions[-10:]) if req.previous_questions else "None"
 
     prompt = f"""Generate a single multiple-choice question for adaptive learning.
 
 Topic: {req.topic}
-Subtopic: {req.subtopic}
+Subtopic Focus: {req.subtopic}
 Difficulty level: {difficulty_label} (IRT b-parameter: {req.difficulty})
 Bloom's Taxonomy level: {req.bloom_level}
 
-Previously asked questions (DO NOT repeat these):
+ADAPTIVE CALIBRATION & DIVERSITY RULES:
+1. FOCUS ON SUBTOPIC: Write the question specifically for the subtopic "{req.subtopic}".
+2. DIFFICULTY CALIBRATION:
+   - If difficulty b < -0.5 or Bloom is 'remember'/'understand': Generate an EASY, FOUNDATIONAL question testing basic syntax, definitions, or simple identification.
+   - If difficulty b > 0.5 or Bloom is 'apply'/'analyze'/'evaluate': Generate a HARDER, ANALYTICAL question involving multi-step scenarios or code execution output.
+3. ABSOLUTE REPETITION PREVENTION:
+   Do NOT repeat any of the questions below or use their exact scenarios/wording:
 {avoid}
 
 IMPORTANT: Vary the position of the correct answer across A, B, C, and D. Do NOT always put it in position A.
@@ -78,7 +84,7 @@ IMPORTANT: Vary the position of the correct answer across A, B, C, and D. Do NOT
 Respond ONLY with valid JSON (no markdown, no backticks):
 {{
   "question": "The question text",
-  "concept": "The specific concept this question tests (e.g. 'TensorFlow', 'Backpropagation', 'Gradient Descent') — be specific, not the subtopic name itself",
+  "concept": "{req.subtopic}",
   "options": {{
     "A": "Option A text",
     "B": "Option B text",
@@ -103,9 +109,11 @@ Calibration guide:
 - Advanced (0.5 to 1.5): analyze, compare, debug complex scenarios
 - Expert (1.5 to 3): evaluate tradeoffs, synthesize, create solutions"""
 
-    message = client.chat.completions.create(
+    message = safe_groq_completion(
+        client,
         model="llama-3.3-70b-versatile",
         max_tokens=1500,
+        temperature=0.7,
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"}
     )
@@ -127,10 +135,16 @@ Calibration guide:
     if "hint" not in data:
         data["hint"] = "Think critically about the options presented."
 
+    # Normalize correct_answer key (A, B, C, D)
+    raw_ans = str(data.get("correct_answer", "A")).strip().upper()
+    if raw_ans.startswith("A"): clean_ans = "A"
+    elif raw_ans.startswith("B"): clean_ans = "B"
+    elif raw_ans.startswith("C"): clean_ans = "C"
+    elif raw_ans.startswith("D"): clean_ans = "D"
+    else: clean_ans = "A"
+    data["correct_answer"] = clean_ans
+
     # ── Anti-cheat variant generation (classroom quizzes only) ──────────
-    # Only fires when the teacher has explicitly enabled anti-cheating on
-    # this specific classroom quiz.  Free-practice requests never pay the
-    # extra LLM call.
     if req.classroom_quiz_id:
         quiz = db.query(ClassroomQuiz).filter(
             ClassroomQuiz.id == req.classroom_quiz_id
@@ -147,7 +161,9 @@ async def submit_answer(
     db: Session = Depends(get_db),
     token: Optional[str] = Depends(oauth2_scheme)
 ):
-    correct = req.selected_option == req.correct_answer
+    user_sel = str(req.selected_option or "").strip().upper()
+    corr_ans = str(req.correct_answer or "").strip().upper()
+    correct = (user_sel == corr_ans) and bool(user_sel)
     new_theta = ThetaEstimator.update_theta(req.theta, correct, req.difficulty, req.question_index)
     next_difficulty = ThetaEstimator.select_next_difficulty(new_theta)
 
