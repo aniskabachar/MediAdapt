@@ -5,8 +5,8 @@ import { Footer } from "@/components/shared/Footer";
 import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "AdaptiveTutor | AI-Powered Adaptive Learning",
-  description: "Accelerate mastery with real-time IRT, Socratic hints, and misconception detection.",
+  title: "HealthLearn | AI-Powered Adaptive Health Education",
+  description: "AI-powered adaptive health literacy — IRT-calibrated, misconception-aware patient education and medical training.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

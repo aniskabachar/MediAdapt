@@ -111,11 +111,10 @@ Calibration guide:
 
     message = safe_groq_completion(
         client,
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-20b",
         max_tokens=1500,
         temperature=0.7,
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"}
+        messages=[{"role": "user", "content": prompt}]
     )
 
     raw = message.choices[0].message.content.strip()

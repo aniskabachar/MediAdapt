@@ -13,7 +13,7 @@ const barColor = (score: number) => score >= 70 ? "var(--primary)" : score >= 50
 export default function EducatorPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [selectedTopic, setSelectedTopic] = useState("Computer Science");
+  const [selectedTopic, setSelectedTopic] = useState("Diabetes Management");
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");

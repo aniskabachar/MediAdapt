@@ -11,8 +11,8 @@ const features = [
 ];
 
 const courses = [
-  { title: "Machine Learning Foundations", tags: ["Reasoning", "AI Tutor"], done: "21/39 lessons", pct: 80, href: "/quiz?topic=machine%20learning" },
-  { title: "Quantum Logic Sprint", tags: ["Adaptive", "Challenge"], done: "19/25 lessons", pct: 85, href: "/quiz?topic=quantum%20mechanics" },
+  { title: "Diabetes Management Basics", tags: ["Health", "AI Tutor"], done: "18/25 lessons", pct: 72, href: "/quiz?topic=diabetes%20management" },
+  { title: "Medication Adherence Training", tags: ["Patient Safety", "Interactive"], done: "12/18 lessons", pct: 67, href: "/quiz?topic=medication%20adherence" },
 ];
 
 export default function Home() {
@@ -26,10 +26,10 @@ export default function Home() {
                 Powered by Adaptive AI
               </span>
               <h1 className="chunky-heading" style={{ fontSize: "var(--heading-2xl)", maxWidth: "42rem" }}>
-                Master any subject with <span style={{ color: "var(--primary)", fontStyle: "italic" }}>AI tutoring</span>
+                Master any health topic with <span style={{ color: "var(--primary)", fontStyle: "italic" }}>AI coaching</span>
               </h1>
               <p className="section-subtitle">
-                Personalized learning paths that adapt to your pace. Practice with generated quizzes, teacher-led classes, Socratic support, and real progress analytics.
+                Personalized health education that adapts to your knowledge level. Practice with patient scenarios, clinical assessments, Socratic guidance, and real learning analytics.
               </p>
               <div style={{ display: "flex", gap: "var(--space-4)", flexWrap: "wrap", paddingTop: "var(--space-2)" }}>
                 <Link href="/quiz" className="neo-btn" style={{ background: "var(--amber)", color: "var(--navy)", boxShadow: "0 12px 24px rgba(250, 204, 21, 0.2)" }}>

@@ -54,7 +54,7 @@ class MisconceptionAnalyzer:
                 "Reply with ONLY the tag, nothing else."
             )
             response = self.groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-20b",
                 max_tokens=10,
                 temperature=0,
                 messages=[{"role": "user", "content": prompt}],

@@ -122,7 +122,7 @@ Respond ONLY with valid JSON (no markdown, no backticks):
         )
         response = safe_groq_completion(
             client,
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-20b",
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},

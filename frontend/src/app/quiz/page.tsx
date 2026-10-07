@@ -90,7 +90,7 @@ function QuizContent() {
  const { user, isLoading } = useAuth();
  const router = useRouter();
  const searchParams = useSearchParams();
- const selectedTopic = searchParams.get("topic") || "Computer Science";
+ const selectedTopic = searchParams.get("topic") || "Diabetes Management";
  const classroomQuizId = searchParams.get("classroomQuizId");
 
  const [quizState, setQuizState] = useState<"setup" | "playing" | "results">("setup");
@@ -1171,7 +1171,7 @@ function QuizContent() {
  value={inputTopic}
  onChange={(e) => setInputTopic(e.target.value)}
  disabled={!!classQuiz}
- placeholder="e.g. Data Structures, Thermodynamics, World History"
+ placeholder="e.g. Diabetes Management, Medication Adherence, Nutrition & Diet"
  style={{ ...inputStyle, flex: 1 }}
  />
  {!classQuiz && (
@@ -1245,7 +1245,7 @@ function QuizContent() {
  ))}
  </select>
  ) : (
- <input value={selectedSubtopic} onChange={(e) => setSelectedSubtopic(e.target.value)} disabled={!!classQuiz} placeholder="e.g. Arrays, Kinematics" style={inputStyle} />
+ <input value={selectedSubtopic} onChange={(e) => setSelectedSubtopic(e.target.value)} disabled={!!classQuiz} placeholder="e.g. Blood Sugar Monitoring, Emergency Signs" style={inputStyle} />
  )}
  </FieldLabel>
 

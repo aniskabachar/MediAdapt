@@ -77,7 +77,7 @@ Maximum 10 subtopics total. Quality over quantity. Only the most important conce
 
         try:
             response = self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-20b",
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"}
@@ -197,7 +197,7 @@ REMEMBER: Correct answer position must be random (A, B, C, or D) - vary it!"""
 
         try:
             response = self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-20b",
                 max_tokens=3000,
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"}

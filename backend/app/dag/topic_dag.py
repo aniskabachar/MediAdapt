@@ -3,6 +3,7 @@ import httpx
 from groq import Groq
 import json
 import logging
+from app.core.config import safe_groq_completion
 
 logger = logging.getLogger(__name__)
 
@@ -63,10 +64,9 @@ Rules:
                 logger.info(f"Attempt {attempt + 1}: Making API call to Groq...")
                 message = safe_groq_completion(
                     client,
-                    model="llama-3.3-70b-versatile",
+                    model="openai/gpt-oss-20b",
                     max_tokens=1500,
                     messages=[{"role": "user", "content": prompt}],
-                    response_format={"type": "json_object"},
                     temperature=0.3,
                 )
                 logger.info("API call successful, processing response...")
