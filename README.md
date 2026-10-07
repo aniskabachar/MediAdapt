@@ -1,17 +1,15 @@
-# HealthLearn — Adaptive Health Literacy Engine
+# HealthLearn - Adaptive Health Literacy Engine
 
-## 🏥 Healthcare Deployment
+## Healthcare Deployment
 
 This engine is domain-agnostic. The healthcare deployment targets:
-- **Patient health literacy** — patients understand their own conditions
-- **Medical student assessment** — adaptive clinical knowledge testing  
-- **Hospital staff training** — compliance and protocol quizzes
+- **Patient health literacy** - patients understand their own conditions
+- **Medical student assessment** - adaptive clinical knowledge testing  
+- **Hospital staff training** - compliance and protocol quizzes
 
 Topics: Diabetes Management · Medication Adherence · Nutrition & Diet · Warning Signs · Preventive Care · Emergency Response
 
----
-
-## 🔬 Core Adaptive Engine
+## Core Adaptive Engine
 
 **IRT (Item Response Theory):** Rasch 1PL model estimates learner ability (θ) in real-time. Questions calibrated to optimal difficulty.
 
@@ -21,7 +19,7 @@ Topics: Diabetes Management · Medication Adherence · Nutrition & Diet · Warni
 
 **Spaced Repetition:** SM-2 algorithm schedules review of weak concepts based on forgetting curves.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Backend
@@ -35,7 +33,7 @@ npm install
 npm run dev
 ```
 
-## 📊 Architecture
+## Architecture
 
 ```
 frontend/ (Next.js)     → User interface
@@ -47,7 +45,7 @@ backend/ (FastAPI)      → API endpoints + business logic
   └── misconceptions/   → Error pattern analysis
 ```
 
-## 🩺 Healthcare Use Cases
+## Healthcare Use Cases
 
 **Patient Education:**
 - Start with "Diabetes Management" → system generates subtopics → adaptive question difficulty
@@ -64,23 +62,26 @@ backend/ (FastAPI)      → API endpoints + business logic
 - Identifies knowledge gaps across departments
 - Spaced repetition ensures retention of critical protocols
 
-## 🤖 AI Components
+## AI Components
 
 **Question Generation:** Groq LLaMA generates questions dynamically based on topic + difficulty + Bloom's taxonomy level
 
-**Socratic Mode:** Fires when learner is confident (≥4/5) but wrong — provides guiding questions instead of answers
+**Socratic Mode:** Fires when learner is confident (≥4/5) but wrong - provides guiding questions instead of answers
 
 **Explanation Calibration:** AI explanations are tuned to learner's current theta (ability) level
 
-## 📈 Differentiation
+## Differentiation
 
 Unlike static healthcare training platforms, this engine:
 - **Adapts in real-time** using psychometric models
 - **Prevents cheating** through dynamic question generation  
 - **Targets misconceptions** rather than just scoring correct/incorrect
 - **Enforces prerequisites** via DAG backtracking when mastery drops
-- **Scales efficiently** — same engine handles basic health literacy and advanced medical training
+- **Scales efficiently** - same engine handles basic health literacy and advanced medical training
 
----
+## Contributors
+
+- **Aniska Bachar** - [@aniskabachar](https://github.com/aniskabachar)
+- **Altamash Shaikh** - [@shaikhaltamash69](https://github.com/shaikhaltamash69)
 
 Built with FastAPI, Next.js, Groq LLaMA, NetworkX, and SQLAlchemy.
